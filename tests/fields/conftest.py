@@ -4,37 +4,42 @@ A pytest conftest module that provides pytest fixtures for galois/fields/ tests.
 import json
 import os
 import pickle
+import random
 
-import pytest
 import numpy as np
+import pytest
 
 import galois
+
+# pylint: disable=redefined-outer-name
 
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 FIELDS = [
+    # Binary field
     pytest.param("GF(2)"),
-
+    # Binary extension fields
     pytest.param("GF(2^2)"),
     pytest.param("GF(2^3)"),
     pytest.param("GF(2^8)"),
     pytest.param("GF(2^32)"),
     pytest.param("GF(2^100)"),
-
+    # Prime fields
     pytest.param("GF(5)"),
     pytest.param("GF(7)"),
     pytest.param("GF(31)"),
     pytest.param("GF(3191)"),
     pytest.param("GF(2147483647)"),
     pytest.param("GF(36893488147419103183)"),
-
+    # Prime extension fields
     pytest.param("GF(7^3)"),
     pytest.param("GF(109987^4)"),
 ]
 
 FIELDS_DIFF_MODES = [
+    # Binary field
     pytest.param("GF(2)-jit-calculate"),
-
+    # Binary extension fields
     pytest.param("GF(2^2)-jit-lookup"),
     pytest.param("GF(2^2)-jit-calculate"),
     pytest.param("GF(2^3)-jit-lookup"),
@@ -45,7 +50,7 @@ FIELDS_DIFF_MODES = [
     pytest.param("GF(2^8, 283, 19)-jit-calculate"),
     pytest.param("GF(2^32)-jit-calculate"),
     pytest.param("GF(2^100)-python-calculate"),
-
+    # Prime fields
     pytest.param("GF(5)-jit-lookup"),
     pytest.param("GF(5)-jit-calculate"),
     pytest.param("GF(7)-jit-lookup"),
@@ -56,7 +61,7 @@ FIELDS_DIFF_MODES = [
     pytest.param("GF(3191)-jit-calculate"),
     pytest.param("GF(2147483647)-jit-calculate"),
     pytest.param("GF(36893488147419103183)-python-calculate"),
-
+    # Prime extension fields
     pytest.param("GF(7^3)-jit-lookup"),
     pytest.param("GF(7^3)-jit-calculate"),
     pytest.param("GF(7^3, 643, 244)-jit-lookup"),
@@ -123,7 +128,6 @@ def read_json(field_folder, filename):
 def read_pickle(field_folder, filename):
     GF, folder = field_folder
     with open(os.path.join(folder, filename), "rb") as f:
-        print(f"Loading {f}...")
         d = pickle.load(f)
     return GF, d
 
@@ -131,6 +135,7 @@ def read_pickle(field_folder, filename):
 ###############################################################################
 # Fixtures for iterating over each finite field
 ###############################################################################
+
 
 @pytest.fixture(scope="session", params=FIELDS)
 def field(request):
@@ -141,13 +146,14 @@ def field(request):
 @pytest.fixture(scope="session", params=FIELDS_DIFF_MODES)
 def field_folder(request):
     folder = request.param
-    field, ufunc_mode, folder = construct_field(folder)
+    field, _, folder = construct_field(folder)
     return field, folder
 
 
 ###############################################################################
 # Fixtures for arithmetic over finite fields
 ###############################################################################
+
 
 @pytest.fixture(scope="session")
 def field_properties(field_folder):
@@ -255,8 +261,24 @@ def field_log(field_folder):
 
 
 ###############################################################################
+# Fixtures for advanced arithmetic over finite fields
+###############################################################################
+
+
+@pytest.fixture(scope="session")
+def field_convolve(field_folder):
+    GF, d = read_pickle(field_folder, "convolve.pkl")
+    d["GF"] = GF
+    d["X"] = [GF(x) for x in d["X"]]
+    d["Y"] = [GF(y) for y in d["Y"]]
+    d["Z"] = [GF(z) for z in d["Z"]]
+    return d
+
+
+###############################################################################
 # Fixtures for linear algebra over finite fields
 ###############################################################################
+
 
 @pytest.fixture(scope="session")
 def field_matrix_multiply(field_folder):
@@ -366,6 +388,7 @@ def field_null_space(field_folder):
 # Fixtures for arithmetic methods over finite fields
 ###############################################################################
 
+
 @pytest.fixture(scope="session")
 def field_additive_order(field_folder):
     GF, d = read_pickle(field_folder, "additive_order.pkl")
@@ -436,3 +459,39 @@ def field_norm(field_folder):
     d["X"] = GF(d["X"])
     d["Z"] = GF.prime_subfield(d["Z"])
     return d
+
+
+###############################################################################
+# Helper functions
+###############################################################################
+
+DTYPES = [np.uint8, np.uint16, np.uint32, np.int8, np.int16, np.int32, np.int64, np.object_]
+
+
+def array_equal(a, b):
+    # Weird NumPy comparison bug, see https://github.com/mhostetter/galois/issues/37
+    if a.dtype == np.object_:
+        return np.array_equal(a, np.array(b, dtype=np.object_))
+    return np.array_equal(a, b)
+
+
+def randint(low, high, shape, dtype):
+    if np.issubdtype(dtype, np.integer):
+        array = np.random.default_rng().integers(low, high, shape, dtype=np.int64)
+    else:
+        # For dtype=object
+        array = np.empty(shape, dtype=dtype)
+        iterator = np.nditer(array, flags=["multi_index", "refs_ok"])
+        for _ in iterator:
+            array[iterator.multi_index] = random.randint(low, high - 1)
+    if isinstance(shape, int) and shape == 1:
+        return array.item()
+    return array
+
+
+def valid_dtype(GF):
+    return random.choice(GF.dtypes)
+
+
+def invalid_dtype(GF):
+    return random.choice([dtype for dtype in DTYPES if dtype not in GF.dtypes])

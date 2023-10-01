@@ -8,28 +8,39 @@ Install
 
 First, `pytest` needs to be installed on your system. Easily install it by installing the development dependencies.
 
-.. code-block:: sh
+.. code-block:: console
 
-   $ python3 -m pip install -r requirements-dev.txt
+   $ python3 -m pip install .[dev]
+
+Configuration
+-------------
+
+The `pytest` configuration is stored in `pyproject.toml`.
+
+.. literalinclude:: ../../pyproject.toml
+   :caption: pyproject.toml
+   :start-at: [tool.pytest.ini_options]
+   :end-before: [tool.coverage.report]
+   :language: toml
 
 Run from the command line
 -------------------------
 
 Execute all of the unit tests manually from the command line.
 
-.. code-block:: sh
+.. code-block:: console
 
     $ python3 -m pytest tests/
 
 Or only run a specific test file.
 
-.. code-block:: sh
+.. code-block:: console
 
     $ python3 -m pytest tests/test_math.py
 
 Or only run a specific unit test.
 
-.. code-block:: sh
+.. code-block:: console
 
     $ python3 -m pytest tests/test_math.py::test_gcd
 
@@ -58,14 +69,14 @@ The two primary third-party tools are `Sage <https://www.sagemath.org/>`_ and `S
 Install Sage
 ............
 
-.. code-block:: sh
+.. code-block:: console
 
     $ sudo apt install sagemath
 
 Install SymPy
 .............
 
-.. code-block:: sh
+.. code-block:: console
 
     $ python3 -m pip install sympy
 
@@ -74,7 +85,7 @@ Generate test vectors
 
 To re-generate the test vectors locally, run:
 
-.. code-block:: sh
+.. code-block:: console
 
     $ python3 scripts/generate_int_test_vectors.py
     $ python3 scripts/generate_field_test_vectors.py

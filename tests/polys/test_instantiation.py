@@ -3,11 +3,12 @@ A pytest module to test Galois field polynomial instantiation.
 """
 import random
 
-import pytest
 import numpy as np
+import pytest
 
 import galois
 
+# pylint: disable=redefined-outer-name
 
 FIELDS = [
     galois.GF2,  # GF(2)
@@ -33,7 +34,7 @@ def config(request):
 
     d["degrees"] = [5, 4, 3, 2, 1, 0]
     d["coeffs"] = [c1, 0, c2, 0, 0, c3]
-    d["integer"] = int(c1)*field.order**5 + int(c2)*field.order**3 + int(c3)*field.order**0
+    d["integer"] = int(c1) * field.order**5 + int(c2) * field.order**3 + int(c3) * field.order**0
     s1, s2, s3 = int(c1) if c1 > 1 else "", int(c2) if c2 > 1 else "", c3
     d["string"] = f"{s1}x^5 + {s2}x^3 + {s3}"
 
@@ -115,7 +116,7 @@ def test_zero(type1, field):
     assert np.array_equal(p.nonzero_coeffs, [])
     assert np.array_equal(p.degrees, [0])
     assert np.array_equal(p.coeffs, [0])
-    assert p.integer == 0
+    assert int(p) == 0
 
 
 @pytest.mark.parametrize("field", FIELDS)
@@ -159,5 +160,5 @@ def check_attributes(poly, config):
     assert np.array_equal(poly.nonzero_coeffs, config["nonzero_coeffs"])
     assert np.array_equal(poly.degrees, config["degrees"])
     assert np.array_equal(poly.coeffs, config["coeffs"])
-    assert poly.integer == config["integer"]
-    assert poly.string == config["string"]
+    assert int(poly) == config["integer"]
+    assert str(poly) == config["string"]

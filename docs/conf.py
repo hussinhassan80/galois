@@ -11,21 +11,34 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
+import inspect
 import os
 import sys
+
+sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath(".."))
 
-from galois import __version__
+# Need to build docs with Python 3.8 or higher for proper typing annotations, including from __future__ import annotations
+assert sys.version_info.major == 3 and sys.version_info.minor >= 8
+
+# Assign a build variable to the builtin module that inerts the @set_module decorator. This is done because set_module
+# confuses Sphinx when parsing overloaded functions. When not building the documentation, the @set_module("galois")
+# decorator works as intended.
+import builtins
+
+setattr(builtins, "__sphinx_build__", True)
 
 import numpy
+import sphinx
 
+import galois
 
 # -- Project information -----------------------------------------------------
 
 project = "galois"
-copyright = "2020-2022, Matt Hostetter"
+copyright = "2020-2023, Matt Hostetter"
 author = "Matt Hostetter"
-version = __version__
+version = galois.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,16 +48,18 @@ version = __version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.autosectionlabel",
-    "sphinxcontrib.details.directive",
-    "recommonmark",
+    "sphinx_last_updated_by_git",
     "sphinx_immaterial",
+    "sphinx_immaterial.apidoc.python.apigen",
+    "sphinx_math_dollar",
+    "myst_parser",
+    "sphinx_design",
     "IPython.sphinxext.ipython_console_highlighting",
-    "IPython.sphinxext.ipython_directive"
+    "IPython.sphinxext.ipython_directive",
+    "ipython_with_reprs",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -87,14 +102,21 @@ html_css_files = [
     "extra.css",
 ]
 
-# Sets the default role of `content` to :samp:`content`, which mimics inline literals ``content```
-default_role = "samp"
+# Define a custom inline Python syntax highlighting literal
+rst_prolog = """
+.. role:: python(code)
+   :language: python
+   :class: highlight
+"""
+
+# Sets the default role of `content` to :python:`content`, which uses the custom Python syntax highlighting inline literal
+default_role = "python"
 
 html_title = "galois"
 html_favicon = "../logo/galois-favicon-color.png"
 html_logo = "../logo/galois-favicon-white.png"
 
-# material theme options (see theme.conf for more information)
+# Sphinx Immaterial theme options
 html_theme_options = {
     "icon": {
         "repo": "fontawesome/brands/github",
@@ -102,9 +124,21 @@ html_theme_options = {
     "site_url": "https://galois.readthedocs.io/",
     "repo_url": "https://github.com/mhostetter/galois",
     "repo_name": "mhostetter/galois",
-    "repo_type": "github",
+    "social": [
+        {
+            "icon": "fontawesome/brands/github",
+            "link": "https://github.com/mhostetter/galois",
+        },
+        {
+            "icon": "fontawesome/brands/python",
+            "link": "https://pypi.org/project/galois/",
+        },
+        {
+            "icon": "fontawesome/brands/twitter",
+            "link": "https://twitter.com/galois_py",
+        },
+    ],
     "edit_uri": "",
-    "google_analytics": ["G-4FW9NCNFZH", "auto"],
     "globaltoc_collapse": False,
     "features": [
         # "navigation.expand",
@@ -115,48 +149,41 @@ html_theme_options = {
         # "header.autohide",
         "navigation.top",
         "navigation.tracking",
+        "toc.follow",
+        "toc.sticky",
+        "content.tabs.link",
+        "announce.dismiss",
     ],
     "palette": [
         {
             "media": "(prefers-color-scheme: light)",
             "scheme": "default",
-            "accent": "deep-orange",
             "toggle": {
-                "icon": "material/weather-sunny",
+                "icon": "material/weather-night",
                 "name": "Switch to dark mode",
             },
         },
         {
             "media": "(prefers-color-scheme: dark)",
             "scheme": "slate",
-            "accent": "deep-orange",
             "toggle": {
-                "icon": "material/weather-night",
+                "icon": "material/weather-sunny",
                 "name": "Switch to light mode",
             },
         },
     ],
-    # "font": {
-    #     "code": "Ubuntu Mono"
-    # },
-    # "version_dropdown": True,
-    # "version_info": [
-    #     {
-    #         "version": "https://sphinx-immaterial.rtfd.io",
-    #         "title": "ReadTheDocs",
-    #         "aliases": []
-    #     },
-    #     {
-    #         "version": "https://jbms.github.io/sphinx-immaterial",
-    #         "title": "Github Pages",
-    #         "aliases": []
-    #     },
-    # ],
+    "analytics": {
+        "provider": "google",
+        "property": "G-4FW9NCNFZH",
+    },
+    "version_dropdown": True,
+    "version_json": "../versions.json",
 }
 
 html_last_updated_fmt = ""
 html_use_index = True
 html_domain_indices = True
+
 
 # -- Extension configuration -------------------------------------------------
 
@@ -164,56 +191,286 @@ html_domain_indices = True
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
-    "numba": ("https://numba.pydata.org/numba-doc/latest/", None)
 }
-
-# pygments_style = "solarized-light"
 
 autodoc_default_options = {
     "imported-members": True,
     "members": True,
-    "undoc-members": True,
-    "special-members": "__call__, __len__",
-    "member-order": "groupwise",
-    "inherited-members": "ndarray"  # Inherit from all classes except np.ndarray
+    # "special-members": True,
+    # "inherited-members": "ndarray",
+    # "member-order": "groupwise",
 }
-autodoc_typehints = "none"
+autodoc_typehints = "signature"
+autodoc_typehints_description_target = "documented"
+autodoc_typehints_format = "short"
 
-autosummary_generate = True
-autosummary_generate_overwrite = True
-autosummary_imported_members = True
+autodoc_type_aliases = {
+    "ElementLike": "~typing.ElementLike",
+    "IterableLike": "~typing.IterableLike",
+    "ArrayLike": "~typing.ArrayLike",
+    "ShapeLike": "~typing.ShapeLike",
+    "DTypeLike": "~typing.DTypeLike",
+    "PolyLike": "~typing.PolyLike",
+}
 
 ipython_execlines = ["import math", "import numpy as np", "import galois"]
 
+myst_enable_extensions = ["dollarmath"]
 
-# -- Functions and setup -----------------------------------------------------
+mathjax_config = {
+    "tex2jax": {
+        "inlineMath": [["\\(", "\\)"]],
+        "displayMath": [["\\[", "\\]"]],
+    },
+}
+mathjax3_config = {
+    "tex": {
+        "inlineMath": [["\\(", "\\)"]],
+        "displayMath": [["\\[", "\\]"]],
+    }
+}
 
-def skip_member(app, what, name, obj, skip, options):
+
+# -- Sphinx Immaterial configs -------------------------------------------------
+
+# Python apigen configuration
+python_apigen_modules = {
+    "galois": "api/galois.",
+    "galois.typing": "api/galois.typing.",
+}
+python_apigen_default_groups = [
+    ("class:.*", "Classes"),
+    ("data:.*", "Variables"),
+    ("function:.*", "Functions"),
+    ("classmethod:.*", "Class methods"),
+    ("method:.*", "Methods"),
+    (r"method:.*\.[A-Z][A-Za-z,_]*", "Constructors"),
+    (r"method:.*\.__[A-Za-z,_]*__", "Special methods"),
+    (r"method:.*\.__(init|new)__", "Constructors"),
+    (r"method:.*\.__(str|repr)__", "String representation"),
+    ("property:.*", "Properties"),
+    (r".*:.*\.is_[a-z,_]*", "Attributes"),
+]
+python_apigen_default_order = [
+    ("class:.*", 10),
+    ("data:.*", 11),
+    ("function:.*", 12),
+    ("classmethod:.*", 40),
+    ("method:.*", 50),
+    (r"method:.*\.[A-Z][A-Za-z,_]*", 20),
+    (r"method:.*\.__[A-Za-z,_]*__", 28),
+    (r"method:.*\.__(init|new)__", 20),
+    (r"method:.*\.__(str|repr)__", 30),
+    ("property:.*", 60),
+    (r".*:.*\.is_[a-z,_]*", 70),
+]
+python_apigen_order_tiebreaker = "alphabetical"
+python_apigen_case_insensitive_filesystem = False
+python_apigen_show_base_classes = True
+
+# Python domain directive configuration
+python_type_aliases = autodoc_type_aliases
+python_module_names_to_strip_from_xrefs = ["collections.abc"]
+
+# General API configuration
+object_description_options = [
+    ("py:.*", dict(include_rubrics_in_toc=True)),
+]
+
+sphinx_immaterial_custom_admonitions = [
+    {
+        "name": "seealso",
+        "title": "See also",
+        "classes": ["collapsible"],
+        "icon": "fontawesome/regular/eye",
+        "override": True,
+    },
+    {
+        "name": "star",
+        "icon": "octicons/star-16",
+        "color": (255, 233, 3),  # Gold
+    },
+    {
+        "name": "fast-performance",
+        "title": "Faster performance",
+        "icon": "material/speedometer",
+        "color": (47, 177, 112),  # Green: --md-code-hl-string-color
+    },
+    {
+        "name": "slow-performance",
+        "title": "Slower performance",
+        "icon": "material/speedometer-slow",
+        "color": (230, 105, 91),  # Red: --md-code-hl-number-color
+    },
+]
+
+
+# -- Monkey-patching ---------------------------------------------------------
+
+SPECIAL_MEMBERS = [
+    "__repr__",
+    "__str__",
+    "__int__",
+    "__call__",
+    "__len__",
+    "__eq__",
+]
+
+
+def autodoc_skip_member(app, what, name, obj, skip, options):
     """
-    Instruct autosummary to skip members that are inherited from np.ndarray
+    Instruct autodoc to skip members that are inherited from np.ndarray.
     """
     if skip:
-        # Continue skipping things sphinx already wants to skip
+        # Continue skipping things Sphinx already wants to skip
         return skip
 
-    if "special-members" in options and name in options["special-members"]:
-        # Don"t skip members in "special-members"
+    if name == "__init__":
+        return False
+    elif hasattr(obj, "__objclass__"):
+        # This is a NumPy method, don't include docs
+        return True
+    elif getattr(obj, "__qualname__", None) in ["FunctionMixin.dot", "Array.astype"]:
+        # NumPy methods that were overridden, don't include docs
+        return True
+    elif (
+        hasattr(obj, "__qualname__")
+        and getattr(obj, "__qualname__").split(".")[0] == "FieldArray"
+        and hasattr(numpy.ndarray, name)
+    ):
+        if name in ["__repr__", "__str__"]:
+            # Specifically allow these methods to be documented
+            return False
+        else:
+            # This is a NumPy method that was overridden in one of our ndarray subclasses. Also don't include
+            # these docs.
+            return True
+
+    if name in SPECIAL_MEMBERS:
+        # Don't skip members in "special-members"
         return False
 
     if name[0] == "_":
-        # For some reason we need to tell sphinx to hide private members
-        return True
-
-    if hasattr(obj, "__objclass__"):
-        # This is a numpy method, don't include docs
-        return True
-    elif hasattr(obj, "__qualname__") and hasattr(numpy.ndarray, name):
-        # This is a numpy method that was overridden in one of our ndarray subclasses. Also don't include
-        # these docs.
+        # For some reason we need to tell Sphinx to hide private members
         return True
 
     return skip
 
 
+def autodoc_process_bases(app, name, obj, options, bases):
+    """
+    Remove private classes or mixin classes from documented class bases.
+    """
+    # Determine the bases to be removed
+    remove_bases = []
+    for base in bases:
+        if base.__name__[0] == "_" or "Mixin" in base.__name__:
+            remove_bases.append(base)
+
+    # Remove from the bases list in-place
+    for base in remove_bases:
+        bases.remove(base)
+
+
+# Only during Sphinx builds, monkey-patch the metaclass properties into this class as "class properties". In Python 3.9 and greater,
+# class properties may be created using `@classmethod @property def foo(cls): return "bar"`. In earlier versions, they must be created
+# in the metaclass, however Sphinx cannot find or document them. Adding this workaround allows Sphinx to document them.
+
+
+def classproperty(obj):
+    ret = classmethod(obj)
+    ret.__doc__ = obj.__doc__
+    return ret
+
+
+ArrayMeta_properties = [
+    member for member in dir(galois.Array) if inspect.isdatadescriptor(getattr(type(galois.Array), member, None))
+]
+for p in ArrayMeta_properties:
+    # Fetch the class properties from the private metaclasses
+    ArrayMeta_property = getattr(galois._domains._meta.ArrayMeta, p)
+
+    # Temporarily delete the class properties from the private metaclasses
+    delattr(galois._domains._meta.ArrayMeta, p)
+
+    # Add a Python 3.9 style class property to the public class
+    setattr(galois.Array, p, classproperty(ArrayMeta_property))
+
+    # Add back the class properties to the private metaclasses
+    setattr(galois._domains._meta.ArrayMeta, p, ArrayMeta_property)
+
+
+FieldArrayMeta_properties = [
+    member
+    for member in dir(galois.FieldArray)
+    if inspect.isdatadescriptor(getattr(type(galois.FieldArray), member, None))
+]
+for p in FieldArrayMeta_properties:
+    # Fetch the class properties from the private metaclasses
+    if p in ArrayMeta_properties:
+        ArrayMeta_property = getattr(galois._domains._meta.ArrayMeta, p)
+    FieldArrayMeta_property = getattr(galois._fields._meta.FieldArrayMeta, p)
+
+    # Temporarily delete the class properties from the private metaclasses
+    if p in ArrayMeta_properties:
+        delattr(galois._domains._meta.ArrayMeta, p)
+    delattr(galois._fields._meta.FieldArrayMeta, p)
+
+    # Add a Python 3.9 style class property to the public class
+    setattr(galois.FieldArray, p, classproperty(FieldArrayMeta_property))
+
+    # Add back the class properties to the private metaclasses
+    if p in ArrayMeta_properties:
+        setattr(galois._domains._meta.ArrayMeta, p, ArrayMeta_property)
+    setattr(galois._fields._meta.FieldArrayMeta, p, FieldArrayMeta_property)
+
+
+def autodoc_process_signature(app, what, name, obj, options, signature, return_annotation):
+    signature = modify_type_hints(signature)
+    return_annotation = modify_type_hints(return_annotation)
+    return signature, return_annotation
+
+
+def modify_type_hints(signature):
+    """
+    Fix shortening numpy type annotations in string annotations created with
+    `from __future__ import annotations` that Sphinx can't process before Python
+    3.10.
+
+    See https://github.com/jbms/sphinx-immaterial/issues/161
+    """
+    if signature:
+        signature = signature.replace("np", "~numpy")
+    return signature
+
+
+def monkey_patch_parse_see_also():
+    """
+    Use the NumPy docstring parsing of See Also sections for convenience. This automatically
+    hyperlinks plaintext functions and methods.
+    """
+    # Add the special parsing method from NumpyDocstring
+    method = sphinx.ext.napoleon.NumpyDocstring._parse_numpydoc_see_also_section
+    sphinx.ext.napoleon.GoogleDocstring._parse_numpydoc_see_also_section = method
+
+    def _parse_see_also_section(self, section: str):
+        """Copied from NumpyDocstring._parse_see_also_section()."""
+        lines = self._consume_to_next_section()
+
+        # Added: strip whitespace from lines to satisfy _parse_numpydoc_see_also_section()
+        for i in range(len(lines)):
+            lines[i] = lines[i].strip()
+
+        try:
+            return self._parse_numpydoc_see_also_section(lines)
+        except ValueError:
+            return self._format_admonition("seealso", lines)
+
+    sphinx.ext.napoleon.GoogleDocstring._parse_see_also_section = _parse_see_also_section
+
+
 def setup(app):
-    app.connect("autodoc-skip-member", skip_member)
+    monkey_patch_parse_see_also()
+    app.connect("autodoc-skip-member", autodoc_skip_member)
+    app.connect("autodoc-process-bases", autodoc_process_bases)
+    app.connect("autodoc-process-signature", autodoc_process_signature)

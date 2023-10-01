@@ -1,8 +1,8 @@
 """
-A pytest module to benchmark Galois field array arithmetic.
+A pytest module to benchmark FieldArray arithmetic.
 """
-import pytest
 import numpy as np
+import pytest
 
 import galois
 
@@ -19,7 +19,7 @@ class Base:
         np.random.seed(123456789)
         self.x = self.GF.Random(self.N)
         self.y = self.GF.Random(self.N, low=1)
-        self.z = np.random.randint(0, 2*self.GF.order, self.N)
+        self.z = np.random.randint(0, 2 * self.GF.order, self.N)
 
     def test_add(self, benchmark):
         benchmark(np.add, self.x, self.y)
@@ -81,15 +81,15 @@ class Test_GF257_calculate(Base):
     N = 100_000
 
 
-@pytest.mark.benchmark(group="GF(3^5) Array Arithmetic: shape=(1_000,), ufunc_mode='jit-lookup'")
+@pytest.mark.benchmark(group="GF(3^5) Array Arithmetic: shape=(100_000,), ufunc_mode='jit-lookup'")
 class Test_GF3_5_lookup(Base):
     order = 3**5
     ufunc_mode = "jit-lookup"
-    N = 1_000
+    N = 100_000
 
 
-@pytest.mark.benchmark(group="GF(3^5) Array Arithmetic: shape=(1_000,), ufunc_mode='jit-calculate'")
+@pytest.mark.benchmark(group="GF(3^5) Array Arithmetic: shape=(10_000,), ufunc_mode='jit-calculate'")
 class Test_GF3_5_calculate(Base):
     order = 3**5
     ufunc_mode = "jit-calculate"
-    N = 1_000
+    N = 10_000

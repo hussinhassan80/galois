@@ -1,15 +1,15 @@
 """
-A pytest module to test the accuracy of Galois field array arithmetic.
+A pytest module to test the accuracy of FieldArray arithmetic.
 """
 import random
 
-import pytest
 import numpy as np
 
 import galois
 
-from ..helper import randint
+from .conftest import randint
 
+# pylint: disable=unidiomatic-typecheck
 
 # TODO: Add scalar arithmetic and array/scalar and radd, etc
 
@@ -21,6 +21,17 @@ def test_add(field_add):
     y = Y.astype(dtype)
 
     z = x + y
+    assert np.array_equal(z, Z)
+    assert type(z) is GF
+    assert z.dtype == dtype
+
+
+def test_additive_inverse(field_additive_inverse):
+    GF, X, Z = field_additive_inverse["GF"], field_additive_inverse["X"], field_additive_inverse["Z"]
+    dtype = random.choice(GF.dtypes)
+    x = X.astype(dtype)
+
+    z = -x
     assert np.array_equal(z, Z)
     assert type(z) is GF
     assert z.dtype == dtype
@@ -50,29 +61,23 @@ def test_multiply(field_multiply):
     assert z.dtype == dtype
 
 
-def test_divide(field_divide):
-    GF, X, Y, Z = field_divide["GF"], field_divide["X"], field_divide["Y"], field_divide["Z"]
+def test_scalar_multiply(field_scalar_multiply):
+    GF, X, Y, Z = (
+        field_scalar_multiply["GF"],
+        field_scalar_multiply["X"],
+        field_scalar_multiply["Y"],
+        field_scalar_multiply["Z"],
+    )
     dtype = random.choice(GF.dtypes)
     x = X.astype(dtype)
-    y = Y.astype(dtype)
+    y = Y  # Don't convert this, it's not a field element
 
-    z = x / y
+    z = x * y
     assert np.array_equal(z, Z)
     assert type(z) is GF
     assert z.dtype == dtype
 
-    z = x // y
-    assert np.array_equal(z, Z)
-    assert type(z) is GF
-    assert z.dtype == dtype
-
-
-def test_additive_inverse(field_additive_inverse):
-    GF, X, Z = field_additive_inverse["GF"], field_additive_inverse["X"], field_additive_inverse["Z"]
-    dtype = random.choice(GF.dtypes)
-    x = X.astype(dtype)
-
-    z = -x
+    z = y * x
     assert np.array_equal(z, Z)
     assert type(z) is GF
     assert z.dtype == dtype
@@ -93,27 +98,54 @@ def test_multiplicative_inverse(field_multiplicative_inverse):
     assert type(z) is GF
     assert z.dtype == dtype
 
-    z = x ** -1
+    z = x**-1
     assert np.array_equal(z, Z)
     assert type(z) is GF
     assert z.dtype == dtype
 
 
-def test_scalar_multiply(field_scalar_multiply):
-    GF, X, Y, Z = field_scalar_multiply["GF"], field_scalar_multiply["X"], field_scalar_multiply["Y"], field_scalar_multiply["Z"]
+def test_divide(field_divide):
+    GF, X, Y, Z = field_divide["GF"], field_divide["X"], field_divide["Y"], field_divide["Z"]
     dtype = random.choice(GF.dtypes)
     x = X.astype(dtype)
-    y = Y  # Don't convert this, it's not a field element
+    y = Y.astype(dtype)
 
-    z = x * y
+    z = x / y
     assert np.array_equal(z, Z)
     assert type(z) is GF
     assert z.dtype == dtype
 
-    z = y * x
+    z = x // y
     assert np.array_equal(z, Z)
     assert type(z) is GF
     assert z.dtype == dtype
+
+
+def test_divmod(field_divide):
+    GF = field_divide["GF"]
+    dtype = random.choice(GF.dtypes)
+    x = GF.Random(10, dtype=dtype)
+    y = GF.Random(10, low=1, dtype=dtype)
+
+    q, r = np.divmod(x, y)
+    assert np.array_equal(q, x // y)
+    assert type(q) is GF
+    assert q.dtype == dtype
+    assert np.all(r == 0)
+    assert type(r) is GF
+    assert r.dtype == dtype
+
+
+def test_mod(field_divide):
+    GF = field_divide["GF"]
+    dtype = random.choice(GF.dtypes)
+    x = GF.Random(10, dtype=dtype)
+    y = GF.Random(10, low=1, dtype=dtype)
+
+    r = x % y
+    assert np.all(r == 0)
+    assert type(r) is GF
+    assert r.dtype == dtype
 
 
 def test_power(field_power):
@@ -122,7 +154,7 @@ def test_power(field_power):
     x = X.astype(dtype)
     y = Y  # Don't convert this, it's not a field element
 
-    z = x ** y
+    z = x**y
     assert np.array_equal(z, Z)
     assert type(z) is GF
     assert z.dtype == dtype
@@ -133,7 +165,7 @@ def test_power_zero_to_zero(field_power):
     dtype = random.choice(GF.dtypes)
     x = GF.Zeros(10, dtype=dtype)
     y = np.zeros(10, GF.dtypes[-1])
-    z = x ** y
+    z = x**y
     Z = np.ones(10, GF.dtypes[-1])
     assert np.array_equal(z, Z)
     assert type(z) is GF
@@ -144,8 +176,8 @@ def test_power_zero_to_positive_integer(field_power):
     GF = field_power["GF"]
     dtype = random.choice(GF.dtypes)
     x = GF.Zeros(10, dtype=dtype)
-    y = randint(1, 2*GF.order, 10, GF.dtypes[-1])
-    z = x ** y
+    y = randint(1, 2 * GF.order, 10, GF.dtypes[-1])
+    z = x**y
     Z = np.zeros(10, GF.dtypes[-1])
     assert np.array_equal(z, Z)
     assert type(z) is GF
@@ -153,19 +185,15 @@ def test_power_zero_to_positive_integer(field_power):
 
 
 def test_square(field_power):
-    GF, X, Y, Z = field_power["GF"], field_power["X"], field_power["Y"], field_power["Z"]
+    GF = field_power["GF"]
     dtype = random.choice(GF.dtypes)
-    x = X.astype(dtype)
-    y = Y  # Don't convert this, it's not a field element
+    x = GF.Random(10, dtype=dtype)
+    x[0:2] = [0, 1]
 
-    # Not guaranteed to have y=2 for "sparse" LUTs
-    if np.where(Y == 2)[1].size > 0:
-        j = np.where(y == 2)[1][0]  # Index of Y where y=2
-        x = x[:,j]
-        z = x ** 2
-        assert np.array_equal(z, Z[:,j])
-        assert type(z) is GF
-        assert z.dtype == dtype
+    z = x**2
+    assert np.array_equal(z, x * x)
+    assert type(z) is GF
+    assert z.dtype == dtype
 
 
 def test_log(field_log):
@@ -176,6 +204,51 @@ def test_log(field_log):
     x = X.astype(dtype)
     z = np.log(x)
     assert np.array_equal(z, Z)
+    z = x.log()
+    assert np.array_equal(z, Z)
+
+
+def test_log_different_base(field_log):
+    GF, X = field_log["GF"], field_log["X"]
+    dtype = random.choice(GF.dtypes)
+    if GF.order > 2**16:  # TODO: Skip slow log() for very large fields
+        return
+    x = X.astype(dtype)
+    beta = GF.primitive_elements[-1]
+    z = x.log(beta)
+    assert np.array_equal(beta**z, x)
+
+
+def test_log_pollard_rho():
+    """
+    The Pollard-rho discrete logarithm algorithm is only applicable for fields when p^m - 1 is prime.
+    """
+    GF = galois.GF(2**19, compile="jit-calculate")
+    assert isinstance(GF._log, galois._domains._calculate.log_pollard_rho)
+    dtype = random.choice(GF.dtypes)
+    x = GF.Random(10, low=1, dtype=dtype)
+
+    alpha = GF.primitive_element
+    z = np.log(x)
+    assert np.array_equal(alpha**z, x)
+    z = x.log()
+    assert np.array_equal(alpha**z, x)
+
+    beta = GF.primitive_elements[-1]
+    z = x.log(beta)
+    assert np.array_equal(beta**z, x)
+
+
+# TODO: Skip slow log() for very large fields
+# def test_log_pollard_rho_python():
+#     GF = galois.GF(2**61)
+#     assert isinstance(GF._log, galois._domains._calculate.log_pollard_rho)
+#     dtype = random.choice(GF.dtypes)
+#     x = GF.Random(low=1, dtype=dtype)
+
+#     alpha = GF.primitive_element
+#     z = x.log()
+#     assert np.array_equal(alpha ** z, x)
 
 
 # class TestArithmeticNonField:

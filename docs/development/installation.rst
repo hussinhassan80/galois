@@ -6,7 +6,7 @@ Install from PyPI
 
 The latest released version of :obj:`galois` can be installed from `PyPI <https://pypi.org/project/galois/>`_ using `pip`.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ python3 -m pip install galois
 
@@ -15,13 +15,13 @@ Install from GitHub
 
 The latest code on `master` can be installed using `pip` in this way.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ python3 -m pip install git+https://github.com/mhostetter/galois.git
 
 Or from a specific branch.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ python3 -m pip install git+https://github.com/mhostetter/galois.git@branch
 
@@ -33,13 +33,13 @@ fashion from a local folder. This allows any changes in the current directory to
 
 Clone the repo wherever you'd like.
 
-.. code-block:: sh
+.. code-block:: console
 
     $ git clone https://github.com/mhostetter/galois.git
 
 Install the local folder using the `-e` or `--editable` flag.
 
-.. code-block:: sh
+.. code-block:: console
 
     $ python3 -m pip install -e galois/
 
@@ -47,13 +47,16 @@ Install the `dev` dependencies
 ------------------------------
 
 The development dependencies include packages for linting and unit testing. These dependencies are stored
-in `requirements-dev.txt`.
+in `pyproject.toml`.
 
-.. literalinclude:: ../../requirements-dev.txt
-   :linenos:
+.. literalinclude:: ../../pyproject.toml
+   :caption: pyproject.toml
+   :start-at: [project.optional-dependencies]
+   :end-before: [project.urls]
+   :language: toml
 
-Install the development dependencies by passing the `-r` switch to `pip install`.
+Install the development dependencies by passing the `[dev]` extras to `pip install`.
 
-.. code-block:: sh
+.. code-block:: console
 
-   $ python3 -m pip install -r requirements-dev.txt
+   $ python3 -m pip install galois[dev]

@@ -4,19 +4,27 @@ A pytest conftest module that provides pytest fixtures for number theoretic func
 import os
 import pickle
 
+import numba
+import numpy
 import pytest
-import numpy as np
 
-FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+import galois
 
+print("\nTested versions:")
+print(f"  galois: {galois.__version__}")
+print(f"  numpy: {numpy.__version__}")
+print(f"  numba: {numba.__version__}")
+print()
 
 ###############################################################################
 # Helper functions
 ###############################################################################
 
+FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+
 def read_pickle(filename):
     with open(os.path.join(FOLDER, filename), "rb") as f:
-        print(f"Loading {f}...")
         d = pickle.load(f)
     return d
 
@@ -24,6 +32,7 @@ def read_pickle(filename):
 ###############################################################################
 # Fixtures for integer math functions
 ###############################################################################
+
 
 @pytest.fixture(scope="session")
 def egcd():
@@ -38,11 +47,6 @@ def lcm():
 @pytest.fixture(scope="session")
 def prod():
     return read_pickle("prod.pkl")
-
-
-@pytest.fixture(scope="session")
-def power():
-    return read_pickle("power.pkl")
 
 
 @pytest.fixture(scope="session")
@@ -69,6 +73,7 @@ def ilog():
 # Fixtures for Number Theory functions
 ###############################################################################
 
+
 @pytest.fixture(scope="session")
 def euler_phi():
     return read_pickle("euler_phi.pkl")
@@ -87,6 +92,7 @@ def is_cyclic():
 ###############################################################################
 # Fixtures for Number Theory functions
 ###############################################################################
+
 
 @pytest.fixture(scope="session")
 def primes():

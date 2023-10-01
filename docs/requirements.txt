@@ -1,9 +1,7 @@
-sphinx>=3
-recommonmark>=0.5
-sphinx_rtd_theme>=0.5
-# readthedocs-sphinx-ext>=1.1
-git+https://github.com/jbms/sphinx-immaterial
+sphinx < 5.4
+sphinx-immaterial == 0.11.5
+myst-parser
+sphinx-design
+sphinx-last-updated-by-git
+sphinx-math-dollar
 ipykernel
-sphinxcontrib-details-directive
-pandoc
-numpy

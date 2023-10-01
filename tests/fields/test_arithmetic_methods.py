@@ -3,10 +3,10 @@ A pytest module to test the accuracy of Galois field arithmetic methods/operatio
 """
 import random
 
-import pytest
 import numpy as np
+import pytest
 
-import galois
+# pylint: disable=unidiomatic-typecheck
 
 
 def test_additive_order(field_additive_order):
@@ -37,13 +37,16 @@ def test_multiplicative_order(field_multiplicative_order):
 
 
 def test_characteristic_poly_element(field_characteristic_poly_element):
-    GF, X, Z = field_characteristic_poly_element["GF"], field_characteristic_poly_element["X"], field_characteristic_poly_element["Z"]
-    dtype = random.choice(GF.dtypes)
-    x = X.astype(dtype)
-
-    for i in range(x.size):
-        zi = x[i].characteristic_poly()
-        assert zi == Z[i]
+    GF, X, Z = (
+        field_characteristic_poly_element["GF"],
+        field_characteristic_poly_element["X"],
+        field_characteristic_poly_element["Z"],
+    )
+    for x, z_truth in zip(X, Z):
+        dtype = random.choice(GF.dtypes)
+        x = x.astype(dtype)
+        z = x.characteristic_poly()
+        assert z == z_truth
 
     # Only 0-D arrays are allowed
     with pytest.raises(ValueError):
@@ -52,31 +55,33 @@ def test_characteristic_poly_element(field_characteristic_poly_element):
 
 
 def test_characteristic_poly_matrix(field_characteristic_poly_matrix):
-    GF, X, Z = field_characteristic_poly_matrix["GF"], field_characteristic_poly_matrix["X"], field_characteristic_poly_matrix["Z"]
-
-    for i in range(len(X)):
+    GF, X, Z = (
+        field_characteristic_poly_matrix["GF"],
+        field_characteristic_poly_matrix["X"],
+        field_characteristic_poly_matrix["Z"],
+    )
+    for x, z_truth in zip(X, Z):
         dtype = random.choice(GF.dtypes)
-        xi = X[i].astype(dtype)
-        zi = xi.characteristic_poly()
-        assert zi == Z[i]
+        x = x.astype(dtype)
+        z = x.characteristic_poly()
+        assert z == z_truth
 
     # Only 2-D square arrays are allowed
     with pytest.raises(ValueError):
         A = GF.Random(5)
         A.characteristic_poly()
     with pytest.raises(ValueError):
-        A = GF.Random((2,3))
+        A = GF.Random((2, 3))
         A.characteristic_poly()
 
 
 def test_minimal_poly_element(field_minimal_poly_element):
     GF, X, Z = field_minimal_poly_element["GF"], field_minimal_poly_element["X"], field_minimal_poly_element["Z"]
-    dtype = random.choice(GF.dtypes)
-    x = X.astype(dtype)
-
-    for i in range(x.size):
-        zi = x[i].minimal_poly()
-        assert zi == Z[i]
+    for x, z_truth in zip(X, Z):
+        dtype = random.choice(GF.dtypes)
+        x = x.astype(dtype)
+        z = x.minimal_poly()
+        assert z == z_truth
 
     # Only 0-D arrays are allowed
     with pytest.raises(ValueError):

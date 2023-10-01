@@ -4,23 +4,25 @@ A pytest conftest module that provides pytest fixtures for galois/polys/ tests.
 import os
 import pickle
 
-import pytest
 import numpy as np
+import pytest
 
 import galois
 
-from ..fields.conftest import field, field_folder
+from ..fields.conftest import field, field_folder  # pylint: disable=unused-import
 
+# pylint: disable=redefined-outer-name
 
 ###############################################################################
 # Helper functions
 ###############################################################################
 
+
 def read_pickle(field_folder, filename):
     GF, folder = field_folder
-    folder = os.path.join(folder, "..", "..", "..", "polys", "data", os.path.basename(folder))  # Convert from folder in fields/data/ to polys/data/
+    # Convert from folder in fields/data/ to polys/data/
+    folder = os.path.join(folder, "..", "..", "..", "polys", "data", os.path.basename(folder))
     with open(os.path.join(folder, filename), "rb") as f:
-        print(f"Loading {f}...")
         d = pickle.load(f)
     return GF, d
 
@@ -28,6 +30,7 @@ def read_pickle(field_folder, filename):
 ###############################################################################
 # Fixtures for polynomial arithmetic over finite fields
 ###############################################################################
+
 
 @pytest.fixture(scope="session")
 def poly_add(field_folder):
@@ -110,9 +113,20 @@ def poly_evaluate_matrix(field_folder):
     return d
 
 
+@pytest.fixture(scope="session")
+def poly_evaluate_poly(field_folder):
+    GF, d = read_pickle(field_folder, "evaluate_poly.pkl")
+    d["GF"] = GF
+    d["X"] = [galois.Poly(p, field=GF) for p in d["X"]]
+    d["Y"] = [galois.Poly(p, field=GF) for p in d["Y"]]
+    d["Z"] = [galois.Poly(p, field=GF) for p in d["Z"]]
+    return d
+
+
 ###############################################################################
 # Fixtures for polynomial arithmetic methods
 ###############################################################################
+
 
 @pytest.fixture(scope="session")
 def poly_reverse(field_folder):
@@ -146,6 +160,7 @@ def poly_derivative(field_folder):
 ###############################################################################
 # Fixtures for polynomial arithmetic functions
 ###############################################################################
+
 
 @pytest.fixture(scope="session")
 def poly_egcd(field_folder):
@@ -198,9 +213,20 @@ def poly_modular_power(field_folder):
     return d
 
 
+@pytest.fixture(scope="session")
+def poly_lagrange_poly(field_folder):
+    GF, d = read_pickle(field_folder, "lagrange_poly.pkl")
+    d["GF"] = GF
+    d["X"] = [GF(X) for X in d["X"]]
+    d["Y"] = [GF(Y) for Y in d["Y"]]
+    d["Z"] = [galois.Poly(p, field=GF) for p in d["Z"]]
+    return d
+
+
 ###############################################################################
 # Fixtures for special polynomials
 ###############################################################################
+
 
 @pytest.fixture(scope="session")
 def poly_is_monic(field_folder):
@@ -227,6 +253,7 @@ def poly_is_primitive(field_folder):
     d["IS"] = [galois.Poly(p, field=GF) for p in d["IS"]]
     d["IS_NOT"] = [galois.Poly(p, field=GF) for p in d["IS_NOT"]]
     return d
+
 
 @pytest.fixture(scope="session")
 def poly_is_square_free(field_folder):

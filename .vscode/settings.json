@@ -1,9 +1,20 @@
 {
-    "python.testing.pytestArgs": ["tests"],
+    "python.testing.pytestArgs": [
+        "-c=pyproject.toml",
+        "tests/"
+    ],
     "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
-    "python.linting.pylintArgs": ["--rcfile=setup.cfg"]
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+    "editor.rulers": [
+        120
+    ]
 }

@@ -9,32 +9,29 @@ Install
 
 First, `pylint` needs to be installed on your system. Easily install it by installing the development dependencies.
 
-.. code-block:: sh
+.. code-block:: console
 
-   $ python3 -m pip install -r requirements-dev.txt
+   $ python3 -m pip install .[dev]
 
 Configuration
 -------------
 
-Various nuisance `pylint` warnings are added to an ignore list in `setup.cfg`.
+Various nuisance `pylint` warnings are added to an ignore list in `pyproject.toml`.
 
-.. code-block:: ini
-   :linenos:
-
-    [pylint]
-    disable =
-        line-too-long,
-        too-many-lines,
-        # ...
+.. literalinclude:: ../../pyproject.toml
+   :caption: pyproject.toml
+   :start-at: [tool.pylint]
+   :end-before: [tool.pytest.ini_options]
+   :language: toml
 
 Run from the command line
 -------------------------
 
-Run the linter manually from the command line by passing in the `setup.cfg` file as the `pylint` configuration file.
+Run the linter manually from the command line.
 
-.. code-block:: sh
+.. code-block:: console
 
-    $ python3 -m pylint --rcfile=setup.cfg galois/
+    $ python3 -m pylint src/galois/
 
 Run from VS Code
 ----------------

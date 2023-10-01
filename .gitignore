@@ -1,6 +1,10 @@
-__pycache__
-.pytest_cache
+__pycache__/
+.benchmarks/
+.ipynb_checkpoints/
+.pytest_cache/
 build/
 dist/
-*.egg-info
-.benchmarks/
+env/
+src/*.egg-info
+src/galois/_version.py
+.coverage
